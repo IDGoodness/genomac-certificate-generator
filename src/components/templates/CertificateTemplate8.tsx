@@ -86,7 +86,7 @@ export default function CertificateTemplate2({
                                     {courseTitle}
                                 </p>
                                 <p className='mx-28 text-lg' > organized by G-Natures.</p>
-                                <p className="font-bold text-lg">{date}</p>
+                                <p className="font-bold text-black text-lg">{date}</p>
                             </div>
 
                             <div className="flex justify-between mx-32">
