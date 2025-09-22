@@ -98,7 +98,8 @@ export default function CertificateTemplate3({
                   certificate
                 </p>
                 <p className="uppercase text-2xl font-medium mt-4 bg-fuchsia-500 mx-[320px] p-2 text-white px-3">
-                  of mentorship
+                  of participation
+                  {/* Remember to change this back to "of mentorship" */}
                 </p>
               </div>
 
