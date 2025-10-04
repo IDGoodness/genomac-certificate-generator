@@ -100,7 +100,7 @@ export default function CertificateTemplate2({
                   {recipientName}
                 </p>
                 <p className='text-black text-lg font-semibold'>
-                  For demonstrating active learning in the:
+                  For successfully participating in the fully funded program on:
                 </p>
                 <p className="uppercase text-xl text-purple-800 font-bold">
                   {courseTitle}
