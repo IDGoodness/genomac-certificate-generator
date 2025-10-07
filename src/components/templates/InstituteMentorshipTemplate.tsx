@@ -145,7 +145,7 @@ export default function CertificateTemplate3({
 
             <section>
               <div className="flex justify-between mx-[180px] ">
-                <div className="">
+                <div className="mt-[7px]">
                   <p className="border-b-2 border-fuchsia-500 w-40">
                     <img
                       src={sign1}
@@ -165,7 +165,7 @@ export default function CertificateTemplate3({
                   <img src={barcode} alt="award" className="" />
                 </div>
 
-                <div className="mt-2">
+                <div className="mt[10px]">
                   <p className="border-b-2 border-fuchsia-500 w-40">
                     <img
                       src={sign2}
