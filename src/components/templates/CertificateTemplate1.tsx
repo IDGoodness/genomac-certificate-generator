@@ -117,7 +117,7 @@ export default function CertificateTemplate1({
                                     {recipientName}
                                 </div>
 
-                                <p className="capitalize py-12 text-center text-black font-base text-sm leading-relaxed">
+                                <p className="capitalize py-6 text-center text-black font-base text-sm leading-relaxed">
                                     {description}
                                     <span className="font-bold uppercase text-black"> {courseTitle} </span>
                                     Organized by Genomac Institute Inc.
@@ -127,7 +127,7 @@ export default function CertificateTemplate1({
                                     {date}
                                 </p>
 
-                                <div className="flex justify-between items-end mt-16 relative">
+                                <div className="flex justify-between items-end mt-10 relative">
                                     <div className="w-[60px]">
                                         <img src={barcode} alt="barcode" className="w-full" />
                                     </div>
