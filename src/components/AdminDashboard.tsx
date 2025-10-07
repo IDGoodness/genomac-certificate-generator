@@ -53,6 +53,7 @@ import SimpleCertificateModal from "./SimpleCertificateModal";
 import CertificateList from "./CertificateList";
 import NewProgramModal from "./NewProgramModal";
 import CertificateTemplate from "./CertificateTemplate";
+import CertificateTemplateManager from "./CertificateTemplateManager";
 import ThemeToggle from "./ThemeToggle";
 import { toast } from "sonner";
 import type { Program, Subsidiary, UserProfile } from "../App";
@@ -1407,6 +1408,12 @@ AdminDashboardProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Template Manager - allow holdings admin to manage templates across subsidiaries */}
+              <CertificateTemplateManager
+                subsidiary={currentSubsidiary}
+                subsidiaries={subsidiaries}
+              />
 
               {/* Change Password Modal/Form */}
               {showChangePassword && (
