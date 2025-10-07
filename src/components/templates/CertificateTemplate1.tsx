@@ -117,7 +117,7 @@ export default function CertificateTemplate1({
                                     {recipientName}
                                 </div>
 
-                                <p className="capitalize py-12 text-center text-black font-base text-sm leading-relaxed">
+                                <p className="capitalize py-6 text-center text-black font-base text-sm leading-relaxed">
                                     {description}
                                     <span className="font-bold uppercase text-black"> {courseTitle} </span>
                                     Organized by Genomac Institute Inc.
@@ -127,12 +127,11 @@ export default function CertificateTemplate1({
                                     {date}
                                 </p>
 
-                                <div className="flex justify-between items-end mt-16 relative">
+                                <div className="flex justify-between items-end mt-10 relative">
                                     <div className="w-[60px]">
                                         <img src={barcode} alt="barcode" className="w-full" />
                                     </div>
 
-                                    {/* Award image positioned in center */}
                                     <div className="absolute left-1/2 top-[60%] transform -translate-x-1/2 -translate-y-1/2 z-20">
                                         <img src={award} alt="award" className="w-[300px] object-contain opacity-100" />
                                     </div>
@@ -150,7 +149,7 @@ export default function CertificateTemplate1({
                                             <p className="text-sm text-gray-700 font-medium">{signatoryTitle1}</p>
                                         </div>
 
-                                        <div className="text-center">
+                                        <div className="text-right">
                                             <div className="border-b-2 border-purple-800 w-[200px] pb-3 -mt-6 ">
                                                 <img
                                                     src={sign2}
