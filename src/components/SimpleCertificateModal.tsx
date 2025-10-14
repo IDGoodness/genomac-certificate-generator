@@ -81,12 +81,12 @@ export default function SimpleCertificateModal({
     setIsGenerating(true);
 
     try {
-      // For Holdings admin, include the current subsidiary in the request
-      const userInfo = authService.getUserInfo();
+      // Unified auth: all users can create certificates
       const certificateRequest = { ...formData };
 
-      if (userInfo.isHoldingsAdmin && currentSubsidiary) {
-        certificateRequest.subsidiary = currentSubsidiary.id; // subsidiary added
+      // Include subsidiary if one is selected
+      if (currentSubsidiary) {
+        certificateRequest.subsidiary = currentSubsidiary.id;
       }
 
       const response = await authService.createCertificate(certificateRequest);

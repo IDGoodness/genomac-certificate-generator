@@ -264,23 +264,6 @@ class AuthService {
             throw new Error('No access token found. Please log in first.');
         }
 
-        // Debug: Check what subsidiary is in the current token
-        try {
-            const decoded = jwtDecode<JWTPayload>(token);
-            // console.log('🔍 JWT Token Analysis:');
-            // console.log('  - Subsidiary in token:', decoded.subsidiary || 'UNDEFINED/NULL');
-            // console.log('  - User ID:', decoded._id);
-            // console.log('  - Email:', decoded.email || 'NOT_SET');
-            // console.log('  - Full decoded token:', decoded);
-            
-            if (!decoded.subsidiary) {
-                console.error('⚠️ WARNING: Token has NO subsidiary information!');
-                console.error('⚠️ This explains why certificates go to wrong subsidiary!');
-            }
-        } catch (error) {
-            console.error('❌ Failed to decode token for debugging:', error);
-        }
-
         console.log('Making create certificate request to:', `${API_BASE}/certificate/create`);
         console.log('📤 Certificate request payload:', JSON.stringify(certificateData, null, 2));
 
@@ -324,73 +307,6 @@ class AuthService {
 
     isAuthenticated(): boolean {
         return !!this.getToken();
-    }
-
-    // Debug helper to check current user's subsidiary from token
-    getCurrentUserSubsidiary(): string | null {
-        const token = this.getToken();
-        if (!token) {
-            console.log('❌ No token found');
-            return null;
-        }
-
-        try {
-            const decoded = jwtDecode<JWTPayload>(token);
-            console.log('🏢 Token Analysis:');
-            console.log('  - Subsidiary:', decoded.subsidiary || 'UNDEFINED');
-            console.log('  - User ID:', decoded._id);
-            console.log('  - Email:', decoded.email);
-            console.log('  - Token issued at:', new Date(decoded.iat * 1000));
-            console.log('  - Token expires at:', new Date(decoded.exp * 1000));
-            
-            if (!decoded.subsidiary) {
-                console.error('🚨 CRITICAL: Your JWT token has NO subsidiary field!');
-                console.error('🚨 This means your account was not properly associated with a subsidiary');
-                console.error('🚨 You need to re-login or re-register with the correct subsidiary');
-            }
-            
-            return decoded.subsidiary || null;
-        } catch (error) {
-            console.error('❌ Failed to decode token:', error);
-            return null;
-        }
-    }
-
-    // Check if current user is Holdings admin (no subsidiary assigned)
-    isHoldingsAdmin(): boolean {
-        const token = this.getToken();
-        if (!token) return false;
-
-        try {
-            const decoded = jwtDecode<JWTPayload>(token);
-            // Holdings admin has no subsidiary or undefined subsidiary
-            return !decoded.subsidiary || decoded.subsidiary === '';
-        } catch (error) {
-            console.error('❌ Failed to decode token:', error);
-            return false;
-        }
-    }
-
-    // Get user role and subsidiary info
-    getUserInfo(): { role: string; subsidiary: string | null; isHoldingsAdmin: boolean } {
-        const token = this.getToken();
-        if (!token) {
-            return { role: 'none', subsidiary: null, isHoldingsAdmin: false };
-        }
-
-        try {
-            const decoded = jwtDecode<JWTPayload>(token);
-            const isHoldingsAdmin = !decoded.subsidiary || decoded.subsidiary === '';
-            
-            return {
-                role: isHoldingsAdmin ? 'holdings_admin' : 'subsidiary_admin',
-                subsidiary: decoded.subsidiary || null,
-                isHoldingsAdmin
-            };
-        } catch (error) {
-            console.error('❌ Failed to decode token:', error);
-            return { role: 'none', subsidiary: null, isHoldingsAdmin: false };
-        }
     }
 }
 
