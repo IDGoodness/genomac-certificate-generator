@@ -18,31 +18,20 @@ interface BackendUserProfile {
 }
 
 // Helper function to transform backend user profile to App UserProfile
-const transformBackendUser = (backendUser: BackendUserProfile, subsidiaries?: Subsidiary[]): UserProfile => {
+const transformBackendUser = (backendUser: BackendUserProfile): UserProfile => {
   // Use email as primary choice (but only if it's not empty), fall back to firstName, then id as last resort
   const hasValidEmail = backendUser.email && backendUser.email.trim() !== '';
   const username = hasValidEmail 
     ? backendUser.email 
     : backendUser.firstName || `User_${backendUser.id.slice(-4)}`;
   
-  // console.log removed: avoid logging PII in production
-  
-  // Find the matching subsidiary object if user has a subsidiary
-  const userSubsidiary = subsidiaries && backendUser.subsidiary 
-    ? subsidiaries.find(sub => sub.id === backendUser.subsidiary) || null
-    : null;
-  
   return {
     id: backendUser.id,
-    username: username, // Use email if valid, otherwise firstName or generated username
-    firstName: backendUser.firstName, // Keep individual first name
-    role: backendUser.subsidiary ? 'subsidiary_admin' : 'holdings_admin', // Holdings admins don't have subsidiary
-    company: 'Genomac Holdings',
-    subsidiary: userSubsidiary, // Map subsidiary ID to actual subsidiary object
-    canSwitchSubsidiaries: !backendUser.subsidiary, // Holdings admin can switch, subsidiary admin cannot
-    permissions: !backendUser.subsidiary 
-      ? ['view_all', 'manage_all', 'analytics_all'] // Holdings admin permissions
-      : ['view_own', 'manage_own', 'analytics_own']  // Subsidiary admin permissions
+    username: username,
+    firstName: backendUser.firstName,
+    role: 'admin', // Single admin role
+    company: 'Genomac',
+    permissions: ['view_all', 'manage_all', 'analytics_all']
   };
 };
 
@@ -58,9 +47,9 @@ interface AuthState {
   sessionStartTime: number | null; // Track when session started
   
   // Actions
-  login: (credentials: LoginRequest, subsidiaries?: Subsidiary[]) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
-  restoreSession: (subsidiaries?: Subsidiary[]) => Promise<void>;
+  restoreSession: () => Promise<void>;
   updateUser: (userData: Partial<UserProfile>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -81,41 +70,35 @@ export const useAuthStore = create<AuthState>()(
       sessionStartTime: null,
 
       // Login action - handles the complete login flow
-      login: async (credentials: LoginRequest, subsidiaries?: Subsidiary[]) => {
-        // console.log('🔐 Starting login process...');
+      login: async (credentials: LoginRequest) => {
         set({ isLoading: true, error: null });
         
         try {
           // Step 1: Login and get token
           const loginResponse = await authService.login(credentials);
-          // console.log('✅ Login successful, token received');
           
           // Step 2: Get user profile from JWT token
           const userProfileResponse: UserProfileResponse = await authService.getUserProfile();
-          // console.log('✅ User profile retrieved from JWT:', userProfileResponse.data);
           
           // Step 3: Transform backend user to App UserProfile format
-          // Use the email from login credentials if JWT doesn't contain it
           const backendUserWithEmail = {
             ...userProfileResponse.data,
-            email: userProfileResponse.data.email || credentials.email // Use JWT email or fallback to login email
+            email: userProfileResponse.data.email || credentials.email
           };
-          const transformedUser = transformBackendUser(backendUserWithEmail, subsidiaries);
+          const transformedUser = transformBackendUser(backendUserWithEmail);
           
           // Step 4: Update store with complete auth state
           set({
             user: transformedUser,
             token: loginResponse.data.token,
-            loginEmail: credentials.email, // Store the login email for session restoration
+            loginEmail: credentials.email,
             isAuthenticated: true,
             isLoading: false,
             error: null,
-            sessionStartTime: Date.now() // Track when session started
+            sessionStartTime: Date.now()
           });
           
-          // console.log removed
         } catch (error) {
-          // console.error('❌ Login failed:', error);
           set({ 
             isLoading: false, 
             error: error instanceof Error ? error.message : 'Login failed',
@@ -124,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             sessionStartTime: null
           });
-          throw error; // Re-throw so components can handle it
+          throw error;
         }
       },
 
@@ -149,12 +132,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Restore session - checks if we have a valid token and restores user
-      restoreSession: async (subsidiaries?: Subsidiary[]) => {
+      restoreSession: async () => {
         const { token, loginEmail } = get();
-        // console.log('🔄 Attempting to restore session...', token ? 'Token found' : 'No token');
         
         if (!token) {
-          // console.log('❌ No token found, cannot restore session');
           return;
         }
         
@@ -163,27 +144,22 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Verify token is still valid by fetching user profile
           const userProfileResponse: UserProfileResponse = await authService.getUserProfile();
-          // console.log('✅ Session restored successfully:', userProfileResponse.data);
           
           // Transform backend user to App UserProfile format
-          // Use stored loginEmail as fallback if JWT doesn't contain email
           const backendUserWithEmail = {
             ...userProfileResponse.data,
-            email: userProfileResponse.data.email || loginEmail || '' // Use JWT email, then stored loginEmail, then empty
+            email: userProfileResponse.data.email || loginEmail || ''
           };
-          const transformedUser = transformBackendUser(backendUserWithEmail, subsidiaries);
+          const transformedUser = transformBackendUser(backendUserWithEmail);
           
           set({
             user: transformedUser,
             isAuthenticated: true,
             isLoading: false,
             error: null,
-            // Keep existing sessionStartTime if available, otherwise set to now
             sessionStartTime: get().sessionStartTime || Date.now()
           });
         } catch {
-          // console.error('❌ Session restoration failed:', error);
-          
           // Token is invalid, clear everything
           authService.logout();
           set({

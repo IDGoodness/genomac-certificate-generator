@@ -82,16 +82,16 @@ export default function CertificateTemplate2({
                                 <p className="mx-28 pt-3 text-lg font-semibold text-black">
                                     {description}
                                 </p>
-                                <p className='uppercase text-xl font-bold' >
+                                <p className='uppercase text-xl font-bold text-black' >
                                     {courseTitle}
                                 </p>
-                                <p className='mx-28 text-lg' > organized by G-Natures.</p>
+                                <p className='mx-28 text-lg text-black' > organized by G-Natures.</p>
                                 <p className="font-bold text-black text-lg">{date}</p>
                             </div>
 
                             <div className="flex justify-between mx-32">
                                 <div className="">
-                                <p className="border-b-2 border-dashed border-purple-800 w-[200px]">
+                                <p className="border-b-2 border-dashed border-green-800 w-[200px]">
                                     <img
                                     src={sign1}
                                     alt="signature"
@@ -111,7 +111,7 @@ export default function CertificateTemplate2({
                                 </div>
 
                                 <div className="-mt-3">
-                                <p className="border-b-2 border-dashed border-purple-800 w-52">
+                                <p className="border-b-2 border-dashed border-green-800 w-52">
                                     <img
                                     src={sign2}
                                     alt="signature"

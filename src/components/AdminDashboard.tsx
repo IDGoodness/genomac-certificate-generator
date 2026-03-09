@@ -32,7 +32,6 @@ import {
   BarChart3,
   Award,
   Share2,
-  Building2,
   Plus,
   Shield,
   Zap,
@@ -53,6 +52,7 @@ import SimpleCertificateModal from "./SimpleCertificateModal";
 import CertificateList from "./CertificateList";
 import NewProgramModal from "./NewProgramModal";
 import CertificateTemplate from "./CertificateTemplate";
+import CertificateTemplateManager from "./CertificateTemplateManager";
 import ThemeToggle from "./ThemeToggle";
 import { toast } from "sonner";
 import type { Program, Subsidiary, UserProfile } from "../App";
@@ -60,6 +60,115 @@ import {
   certificateService,
   type Certificate,
 } from "../services/certificate.service";
+
+// Import subsidiary data directly since we now have unified auth
+import genomacInstituteLogo from "../assets/genomacinstitutelogo.png";
+import genomacLabsLogo from "../assets/genomaclabs.png";
+import gscLogo from "../assets/gsclogo.png";
+import gnaturesLogo from "../assets/gnaturesround.png";
+import gihubLogo from "../assets/gihublogo.png";
+
+// Subsidiaries data - now managed as content categories, not auth contexts
+const subsidiaries: Subsidiary[] = [
+  {
+    id: "genomac_institute",
+    name: "Genomac Institute Inc.",
+    shortName: "Institute",
+    logo: genomacInstituteLogo,
+    primaryColor: "#6366f1",
+    allowedTemplates: ["1", "2", "institute-mentorship"],
+    programs: [
+      {
+        id: "bioinformatics-certificate",
+        name: "Bioinformatics Certificate Program",
+        template: "1",
+        certificates: 342,
+        testimonials: 125,
+        description:
+          "Comprehensive program in genomics, proteomics, and computational biology analysis",
+      },
+      {
+        id: "genomic-medicine",
+        name: "Genomic Medicine Specialization",
+        template: "2",
+        certificates: 198,
+        testimonials: 87,
+        description:
+          "Advanced training in personalized medicine and genetic counseling",
+      },
+    ],
+  },
+  {
+    id: "genomac_services_and_consult",
+    name: "Genomac Services and Consult (GSC)",
+    shortName: "GSC",
+    logo: gscLogo,
+    primaryColor: "#059669",
+    programs: [
+      {
+        id: "business-analytics",
+        name: "Healthcare Business Analytics",
+        template: "5",
+        certificates: 278,
+        testimonials: 104,
+        description: "Data-driven decision making for healthcare organizations",
+      },
+    ],
+  },
+  {
+    id: "genomac_innovation_hub",
+    name: "Genomac Innovation Hub (G-iHub)",
+    shortName: "G-iHub",
+    logo: gihubLogo,
+    primaryColor: "#ea580c",
+    programs: [
+      {
+        id: "innovation-leadership",
+        name: "Innovation Leadership Program",
+        template: "3",
+        certificates: 167,
+        testimonials: 89,
+        description:
+          "Leading innovation teams and driving technological advancement",
+      },
+    ],
+  },
+  {
+    id: "g_natures",
+    name: "GNATURES",
+    shortName: "GNATURES",
+    logo: gnaturesLogo,
+    primaryColor: "#84cc16",
+    programs: [
+      {
+        id: "natural-products",
+        name: "Natural Products Research",
+        template: "7",
+        certificates: 112,
+        testimonials: 47,
+        description: "Discovery and development of natural bioactive compounds",
+      },
+    ],
+  },
+  {
+    id: "genomac_labs",
+    name: "Genomac Labs, Lagos",
+    shortName: "Labs Lagos",
+    logo: genomacLabsLogo,
+    primaryColor: "#7c3aed",
+    programs: [
+      {
+        id: "lab-techniques",
+        name: "Advanced Laboratory Techniques",
+        template: "9",
+        certificates: 234,
+        testimonials: 96,
+        description:
+          "Hands-on training in modern molecular biology and biochemistry techniques",
+      },
+    ],
+  },
+];
 // Realtime analytics removed: imports and client usage cleaned up
 type RealtimeCounts = {
   totalCertificates: number;
@@ -73,40 +182,14 @@ import genomacHoldingsLogo from "../assets/genomacholdingslogo.png"; // Holdings
 
 interface AdminDashboardProps {
   user: UserProfile;
-  subsidiaries: Subsidiary[];
   onLogout: () => void;
-  onUpdateSubsidiary: (
-    subsidiaryId: string,
-    updates: Partial<Subsidiary>
-  ) => void;
-  onAddProgram: (subsidiaryId: string, newProgram: Program) => void;
-  onUpdateProgramStats: (
-    subsidiaryId: string,
-    programId: string,
-    certificateCount: number
-  ) => void;
-  onUpdateProgram: (
-    subsidiaryId: string,
-    programId: string,
-    updates: Partial<Program>
-  ) => void;
 }
 
 export default function AdminDashboard({
   user,
-  subsidiaries,
-  // userProfiles,
   onLogout,
-  // onUpdateSubsidiary,
-  onAddProgram,
-}: // onUpdateProgramStats,
-// onUpdateProgram
-AdminDashboardProps) {
+}: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<string>("overview");
-  // Holdings admin: null = All Subsidiaries (umbrella, not itself a subsidiary)
-  const [currentSubsidiary, setCurrentSubsidiary] = useState<Subsidiary | null>(
-    (user.role as string) === "holdings_admin" ? null : user.subsidiary
-  );
   const [showCertificateModal, setShowCertificateModal] =
     useState<boolean>(false);
   const [showNewProgramModal, setShowNewProgramModal] =
@@ -154,52 +237,14 @@ AdminDashboardProps) {
       try {
         setLoadingStats(true);
 
-        if ((user.role as string) === "holdings_admin") {
-          // Holdings admin: fetch certificates based on current subsidiary selection
-          if (currentSubsidiary) {
-            // Fetch certificates for the selected subsidiary only
-            // onsole.log('Holdings admin: Fetching certificates for subsidiary:', currentSubsidiary.shortName);
-            const certificates =
-              await certificateService.getCertificatesBySubsidiary(
-                currentSubsidiary.id
-              );
-            console.log(
-              "📊 Fetched certificates for",
-              currentSubsidiary.shortName,
-              ":",
-              certificates
-            );
-            setActualCertificates(certificates);
-          } else {
-            // Fetch all certificates when viewing "All Subsidiaries"
-            console.log(
-              "📊 Holdings admin: Fetching all certificates (All Subsidiaries view)"
-            );
-            const certificates =
-              await certificateService.getCertificatesBySubsidiary();
-            // console.log('📊 Fetched all certificates:', certificates);
-            setActualCertificates(certificates);
-          }
-        } else if (user.subsidiary) {
-          // Subsidiary admin: fetch only their subsidiary's certificates
-          // console.log('📊 Subsidiary admin: Fetching certificates for:', user.subsidiary.shortName);
-          const certificates =
-            await certificateService.getCertificatesBySubsidiary(
-              user.subsidiary.id
-            );
-          console.log(
-            "📊 Fetched certificates for",
-            user.subsidiary.shortName,
-            ":",
-            certificates
-          );
-          setActualCertificates(certificates);
-        } else {
-          console.log("📊 No subsidiary found for user, using static data");
-        }
+        // Unified auth: fetch all certificates
+        console.log("📊 Fetching all certificates for unified dashboard");
+        const certificates =
+          await certificateService.getCertificatesBySubsidiary();
+        console.log("📊 Fetched all certificates:", certificates);
+        setActualCertificates(certificates);
       } catch (error) {
         console.error("Failed to fetch certificates for stats:", error);
-        // Fall back to using static program data
         setActualCertificates([]);
       } finally {
         setLoadingStats(false);
@@ -207,51 +252,49 @@ AdminDashboardProps) {
     };
 
     fetchCertificates();
-  }, [user.role, user.subsidiary, currentSubsidiary]);
+  }, []);
 
   // Realtime analytics removed. No side effect required.
 
-  // Calculate statistics based on current view
+  // Calculate statistics for unified dashboard
   const getStats = () => {
-    if (
-      (user.role as string) === "holdings_admin" &&
-      user.canSwitchSubsidiaries
-    ) {
-      // Holdings admin sees aggregated data from all subsidiaries or selected subsidiary
-      const targetSubsidiaries = currentSubsidiary
-        ? [currentSubsidiary]
-        : subsidiaries;
+    // Use actual certificate data if available, otherwise fall back to static program data
+    let totalCertificates = 0;
+    if (actualCertificates.length > 0 || loadingStats === false) {
+      // Use actual API data (including when count is 0)
+      totalCertificates = actualCertificates.length;
+    } else {
+      // Fall back to static program data while loading
+      totalCertificates = subsidiaries.reduce(
+        (sum: number, sub: Subsidiary) =>
+          sum +
+          sub.programs.reduce(
+            (progSum: number, prog: Program) => progSum + prog.certificates,
+            0
+          ),
+        0
+      );
+    }
 
-      // Use actual certificate data if available, otherwise fall back to static program data
-      let totalCertificates = 0;
-      if (actualCertificates.length > 0 || loadingStats === false) {
-        // Use actual API data (including when count is 0)
-        if (currentSubsidiary) {
-          // Viewing specific subsidiary - use filtered certificates or direct count
-          totalCertificates = actualCertificates.filter(
-            (cert) => cert.subsidiary === currentSubsidiary.id
-          ).length;
-        } else {
-          // Viewing all subsidiaries - use total count
-          // Note: When viewing "All Subsidiaries", we fetch all certificates so this is the total
-          totalCertificates = actualCertificates.length;
-        }
-      } else {
-        // Fall back to static program data while loading
-        totalCertificates = targetSubsidiaries.reduce(
-          (sum: number, sub: Subsidiary) =>
-            sum +
-            sub.programs.reduce(
-              (progSum: number, prog: Program) => progSum + prog.certificates,
-              0
-            ),
-          0
-        );
-      }
-
-      return {
-        totalCertificates,
-        totalTestimonials: targetSubsidiaries.reduce(
+    return {
+      totalCertificates,
+      totalTestimonials: subsidiaries.reduce(
+        (sum: number, sub: Subsidiary) =>
+          sum +
+          sub.programs.reduce(
+            (progSum: number, prog: Program) => progSum + prog.testimonials,
+            0
+          ),
+        0
+      ),
+      totalPrograms: subsidiaries.reduce(
+        (sum: number, sub: Subsidiary) => sum + sub.programs.length,
+        0
+      ),
+      activeSubsidiaries: subsidiaries.length,
+      totalShares: 247, // Mock data for now
+      averageEngagement: Math.floor(
+        (subsidiaries.reduce(
           (sum: number, sub: Subsidiary) =>
             sum +
             sub.programs.reduce(
@@ -259,56 +302,11 @@ AdminDashboardProps) {
               0
             ),
           0
-        ),
-        totalPrograms: targetSubsidiaries.reduce(
-          (sum: number, sub: Subsidiary) => sum + sub.programs.length,
-          0
-        ),
-        activeSubsidiaries: targetSubsidiaries.length,
-        totalShares: 247, // Mock data for now
-      };
-    } else {
-      // Subsidiary admin sees only their own data
-      const targetSub = currentSubsidiary || user.subsidiary;
-      if (!targetSub) {
-        return {
-          totalCertificates: 0,
-          totalTestimonials: 0,
-          totalPrograms: 0,
-          averageEngagement: 0,
-        };
-      }
-
-      // Use actual certificate data if available, otherwise fall back to static program data
-      let totalCertificates = 0;
-      if (actualCertificates.length > 0 || loadingStats === false) {
-        // Use actual API data (including when count is 0)
-        totalCertificates = actualCertificates.length; // Since we fetch only this subsidiary's certificates
-      } else {
-        // Fall back to static program data while loading
-        totalCertificates = targetSub.programs.reduce(
-          (sum: number, p: Program) => sum + p.certificates,
-          0
-        );
-      }
-
-      return {
-        totalCertificates,
-        totalTestimonials: targetSub.programs.reduce(
-          (sum: number, p: Program) => sum + p.testimonials,
-          0
-        ),
-        totalPrograms: targetSub.programs.length,
-        averageEngagement: Math.floor(
-          (targetSub.programs.reduce(
-            (sum: number, p: Program) => sum + p.testimonials,
-            0
-          ) /
-            Math.max(totalCertificates, 1)) *
-            100
-        ),
-      };
-    }
+        ) /
+          Math.max(totalCertificates, 1)) *
+          100
+      ),
+    };
   };
 
   const stats = getStats();
@@ -316,7 +314,7 @@ AdminDashboardProps) {
     realtimeCounts?.totalCertificates ?? stats.totalCertificates;
 
   // Student Experience Preview Functions
-  const demoSubsidiary = currentSubsidiary || subsidiaries[0];
+  const demoSubsidiary = subsidiaries[0];
   const demoProgram = demoSubsidiary?.programs[0];
 
   const shareToSocialMedia = (platform: string) => {
@@ -448,107 +446,51 @@ AdminDashboardProps) {
                   </div>
                 </div>
 
-                {/* Current Subsidiary Display */}
-                {currentSubsidiary && (
-                  <div className="hidden md:flex items-center gap-2 pl-4 border-l border-gray-200 dark:border-gray-600">
-                    <img
-                      src={currentSubsidiary.logo}
-                      alt={currentSubsidiary.name}
-                      className="h-8 w-auto rounded"
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {currentSubsidiary.shortName}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {loadingStats
-                          ? "Loading..."
-                          : `${actualCertificates.length} certificates`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* User Info and Controls */}
-              <div className="flex items-center gap-4 flex-shrink-0">
-                {/* Desktop Controls */}
-                <div className="hidden md:flex items-center gap-4">
-                  <ThemeToggle className="shrink-0" />
-                  {user.canSwitchSubsidiaries && (
-                    <div>
-                      <Select
-                        value={currentSubsidiary?.id || "all"}
-                        onValueChange={(value) => {
-                          if (value === "all") {
-                            setCurrentSubsidiary(null);
-                          } else {
-                            const subsidiary = subsidiaries.find(
-                              (s) => s.id === value
-                            );
-                            setCurrentSubsidiary(subsidiary || null);
-                          }
-                        }}
+                {/* User Info and Controls */}
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  {/* Desktop Controls */}
+                  <div className="hidden md:flex items-center gap-4">
+                    <ThemeToggle className="shrink-0" />
+                    <div className="text-right">
+                      <p
+                        className="font-medium text-gray-900 dark:text-white line-clamp-1 max-w-[140px]"
+                        title={user.username}
                       >
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Subsidiary" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-72">
-                          <SelectItem value="all">All Subsidiaries</SelectItem>
-                          {subsidiaries.map((sub) => (
-                            <SelectItem key={sub.id} value={sub.id}>
-                              {sub.shortName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  <div className="text-right">
-                    <p
-                      className="font-medium text-gray-900 dark:text-white line-clamp-1 max-w-[140px]"
-                      title={user.username}
-                    >
-                      {user.username}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      {user.role === "holdings_admin" ? (
-                        <Shield className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                      ) : (
-                        <Building2 className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.role === "holdings_admin"
-                          ? "Holdings Admin"
-                          : "Subsidiary Admin"}
+                        {user.username}
                       </p>
+                      <div className="flex items-center gap-1">
+                        <Shield className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Admin
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm("Sign out?")) onLogout();
+                      }}
+                    >
+                      Sign Out
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm("Sign out?")) onLogout();
-                    }}
-                  >
-                    Sign Out
-                  </Button>
-                </div>
 
-                {/* Mobile Menu Toggle */}
-                <div className="md:hidden flex items-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setMobileMenuOpen((o) => !o)}
-                    aria-label="Toggle menu"
-                  >
-                    {mobileMenuOpen ? (
-                      <X className="w-4 h-4" />
-                    ) : (
-                      <Menu className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {/* Mobile Menu Toggle */}
+                  <div className="md:hidden flex items-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setMobileMenuOpen((o) => !o)}
+                      aria-label="Toggle menu"
+                    >
+                      {mobileMenuOpen ? (
+                        <X className="w-4 h-4" />
+                      ) : (
+                        <Menu className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -572,48 +514,9 @@ AdminDashboardProps) {
                     </Button>
                   </div>
                   <div className="grid gap-4">
-                    {user.canSwitchSubsidiaries && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Subsidiary
-                        </p>
-                        <Select
-                          value={currentSubsidiary?.id || "all"}
-                          onValueChange={(value) => {
-                            if (value === "all") {
-                              setCurrentSubsidiary(null);
-                            } else {
-                              const subsidiary = subsidiaries.find(
-                                (s) => s.id === value
-                              );
-                              setCurrentSubsidiary(subsidiary || null);
-                            }
-                            setMobileMenuOpen(false);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Subsidiary" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-72">
-                            <SelectItem value="all">
-                              All Subsidiaries
-                            </SelectItem>
-                            {subsidiaries.map((sub) => (
-                              <SelectItem key={sub.id} value={sub.id}>
-                                {sub.shortName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2 min-w-0">
-                        {user.role === "holdings_admin" ? (
-                          <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        ) : (
-                          <Building2 className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
-                        )}
+                        <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                         <div className="min-w-0">
                           <p
                             className="text-sm font-medium truncate max-w-[160px]"
@@ -622,9 +525,7 @@ AdminDashboardProps) {
                             {user.username}
                           </p>
                           <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            {user.role === "holdings_admin"
-                              ? "Holdings Admin"
-                              : "Subsidiary Admin"}
+                            Admin
                           </p>
                         </div>
                       </div>
@@ -732,35 +633,29 @@ AdminDashboardProps) {
                         Welcome, {user.username}
                       </h2>
                       <p className="text-indigo-100 mb-2">
-                        {(user.role as string) === "holdings_admin"
-                          ? `Managing certificate programs across ${subsidiaries.length} Genomac Holdings subsidiaries`
-                          : `Managing certificate programs for ${user.subsidiary?.name}`}
+                        Managing certificate programs across{" "}
+                        {subsidiaries.length} Genomac Holdings subsidiaries
                       </p>
-                      {(user.role as string) === "holdings_admin" && (
-                        <div className="flex items-center gap-2 text-indigo-200">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="cursor-default">
-                                <Shield className="w-4 h-4" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>
-                                Full administrative access to all subsidiaries
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <span className="text-sm">
-                            Holdings Administrator Access
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 text-indigo-200">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-default">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Full administrative access to all subsidiaries
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <span className="text-sm">Administrator Access</span>
+                      </div>
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="cursor-default">
                           <Award className="w-16 h-16 text-white opacity-50" />
-                          {/* <img src={currentSubsidiary?.logo} alt={currentSubsidiary?.name} className="h-20 w-auto rounded" /> */}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -783,8 +678,8 @@ AdminDashboardProps) {
                         <div className="cursor-default">
                           {/* <Award className="h-4 w-4 text-indigo-600" /> */}
                           <img
-                            src={currentSubsidiary?.logo}
-                            alt={currentSubsidiary?.name}
+                            src="/genomacholdingslogo.png"
+                            alt="Genomac Holdings"
                             className="h-20 w-auto rounded"
                           />
                         </div>
@@ -792,16 +687,13 @@ AdminDashboardProps) {
                       <TooltipContent>
                         <div>
                           <p>Total certificates issued</p>
-                          {((user.role as string) === "holdings_admin" ||
-                            user.subsidiary) && (
-                            <p className="text-2xl mt-1">
-                              {loadingStats
-                                ? "Loading live data..."
-                                : !loadingStats
-                                ? "🟢 Live data from API"
-                                : "🟠 Static program data"}
-                            </p>
-                          )}
+                          <p className="text-2xl mt-1">
+                            {loadingStats
+                              ? "Loading live data..."
+                              : !loadingStats
+                              ? "🟢 Live data from API"
+                              : "🟠 Static program data"}
+                          </p>
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -819,16 +711,10 @@ AdminDashboardProps) {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {(user.role as string) === "holdings_admin"
-                        ? currentSubsidiary
-                          ? `${currentSubsidiary.shortName} certificates`
-                          : `Across all ${subsidiaries.length} subsidiaries`
-                        : "Your subsidiary"}
-                      {((user.role as string) === "holdings_admin" ||
-                        user.subsidiary) &&
-                        !loadingStats && (
-                          <span className="text-green-600 ml-1">• Live</span>
-                        )}
+                      Across all {subsidiaries.length} subsidiaries
+                      {!loadingStats && (
+                        <span className="text-green-600 ml-1">• Live</span>
+                      )}
                     </p>
                   </CardContent>
                 </Card>
@@ -933,11 +819,8 @@ AdminDashboardProps) {
                         Certificate Management
                       </CardTitle>
                       <CardDescription>
-                        {(user.role as string) === "holdings_admin"
-                          ? currentSubsidiary
-                            ? `Managing certificates for ${currentSubsidiary.name}`
-                            : `Managing certificates across all ${subsidiaries.length} subsidiaries`
-                          : "View, manage, and track all issued certificates"}
+                        View, manage, and track all issued certificates across
+                        all subsidiaries
                       </CardDescription>
                     </div>
                     <Tooltip>
@@ -956,11 +839,7 @@ AdminDashboardProps) {
                 <CardContent>
                   <CertificateList
                     onCreateNew={() => setShowCertificateModal(true)}
-                    subsidiaryId={
-                      ((user.role as string) === "holdings_admin"
-                        ? currentSubsidiary?.id
-                        : user.subsidiary?.id) || ""
-                    }
+                    subsidiaryId="" // Empty to fetch all certificates
                     // subsidiaries={subsidiaries} // Removed: not in CertificateListProps
                     // isHoldingsAdmin removed: not in CertificateListProps
                     // currentSubsidiary removed: not in CertificateListProps
@@ -1202,11 +1081,7 @@ AdminDashboardProps) {
                         {effectiveTotalCertificates.toLocaleString()}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {currentSubsidiary
-                          ? currentSubsidiary.shortName
-                          : (user.role as string) === "holdings_admin"
-                          ? "All Subsidiaries"
-                          : user.subsidiary?.shortName}
+                        All Subsidiaries
                         {realtimeCounts?.updatedAt && (
                           <span className="ml-2">
                             · Updated {formatTimeAgo(realtimeCounts.updatedAt)}
@@ -1219,15 +1094,10 @@ AdminDashboardProps) {
                         Programs
                       </span>
                       <div className="text-3xl font-bold">
-                        {(user.role as string) === "holdings_admin" &&
-                        !currentSubsidiary
-                          ? subsidiaries.reduce(
-                              (s, sub) => s + sub.programs.length,
-                              0
-                            )
-                          : currentSubsidiary?.programs.length ||
-                            user.subsidiary?.programs.length ||
-                            0}
+                        {subsidiaries.reduce(
+                          (s, sub) => s + sub.programs.length,
+                          0
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Configured programs
@@ -1238,26 +1108,16 @@ AdminDashboardProps) {
                         Testimonials
                       </span>
                       <div className="text-3xl font-bold">
-                        {(user.role as string) === "holdings_admin" &&
-                        !currentSubsidiary
-                          ? subsidiaries.reduce(
-                              (s, sub) =>
-                                s +
-                                sub.programs.reduce(
-                                  (pSum, p) => pSum + p.testimonials,
-                                  0
-                                ),
+                        {subsidiaries.reduce(
+                          (s, sub) =>
+                            s +
+                            sub.programs.reduce(
+                              (pSum: number, p: { testimonials: number }) =>
+                                pSum + p.testimonials,
                               0
-                            )
-                          : currentSubsidiary
-                          ? currentSubsidiary.programs.reduce(
-                              (s, p) => s + p.testimonials,
-                              0
-                            )
-                          : user.subsidiary?.programs.reduce(
-                              (s, p) => s + p.testimonials,
-                              0
-                            ) || 0}
+                            ),
+                          0
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Collected feedback
@@ -1266,90 +1126,87 @@ AdminDashboardProps) {
                   </div>
 
                   {/* Distribution Table */}
-                  {(user.role as string) === "holdings_admin" &&
-                    !currentSubsidiary && (
-                      <div className="mt-8">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 rounded-full bg-indigo-500" />{" "}
-                          Certificates by Subsidiary
-                        </h3>
-                        <div className="overflow-x-auto border rounded-lg">
-                          <table className="min-w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300">
-                              <tr>
-                                <th className="text-left font-medium px-4 py-2">
-                                  Subsidiary
-                                </th>
-                                <th className="text-right font-medium px-4 py-2">
-                                  Certificates
-                                </th>
-                                <th className="text-right font-medium px-4 py-2">
-                                  Programs
-                                </th>
-                                <th className="text-right font-medium px-4 py-2">
-                                  Testimonials
-                                </th>
-                                <th className="text-right font-medium px-4 py-2">
-                                  Share %
-                                </th>
+                  <div className="mt-8">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-indigo-500" />{" "}
+                      Certificates by Subsidiary
+                    </h3>
+                    <div className="overflow-x-auto border rounded-lg">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300">
+                          <tr>
+                            <th className="text-left font-medium px-4 py-2">
+                              Subsidiary
+                            </th>
+                            <th className="text-right font-medium px-4 py-2">
+                              Certificates
+                            </th>
+                            <th className="text-right font-medium px-4 py-2">
+                              Programs
+                            </th>
+                            <th className="text-right font-medium px-4 py-2">
+                              Testimonials
+                            </th>
+                            <th className="text-right font-medium px-4 py-2">
+                              Share %
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {subsidiaries.map((sub) => {
+                            const certCount =
+                              actualCertificates.length > 0
+                                ? actualCertificates.filter(
+                                    (c) => c.subsidiary === sub.id
+                                  ).length
+                                : sub.programs.reduce(
+                                    (s, p) => s + p.certificates,
+                                    0
+                                  );
+                            const programCount = sub.programs.length;
+                            const testimonialCount = sub.programs.reduce(
+                              (s, p) => s + p.testimonials,
+                              0
+                            );
+                            const total = effectiveTotalCertificates || 0;
+                            const pct =
+                              total > 0
+                                ? ((certCount / total) * 100).toFixed(1)
+                                : "0.0";
+                            return (
+                              <tr
+                                key={sub.id}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                              >
+                                <td className="px-4 py-2 font-medium flex items-center gap-2">
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{
+                                      backgroundColor:
+                                        sub.primaryColor || "#6366f1",
+                                    }}
+                                  />
+                                  {sub.shortName}
+                                </td>
+                                <td className="px-4 py-2 text-right font-mono tabular-nums">
+                                  {certCount.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-2 text-right font-mono">
+                                  {programCount}
+                                </td>
+                                <td className="px-4 py-2 text-right font-mono">
+                                  {testimonialCount}
+                                </td>
+                                <td className="px-4 py-2 text-right font-mono text-gray-500">
+                                  {pct}%
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                              {subsidiaries.map((sub) => {
-                                const certCount =
-                                  actualCertificates.length > 0
-                                    ? actualCertificates.filter(
-                                        (c) => c.subsidiary === sub.id
-                                      ).length
-                                    : sub.programs.reduce(
-                                        (s, p) => s + p.certificates,
-                                        0
-                                      );
-                                const programCount = sub.programs.length;
-                                const testimonialCount = sub.programs.reduce(
-                                  (s, p) => s + p.testimonials,
-                                  0
-                                );
-                                const total = effectiveTotalCertificates || 0;
-                                const pct =
-                                  total > 0
-                                    ? ((certCount / total) * 100).toFixed(1)
-                                    : "0.0";
-                                return (
-                                  <tr
-                                    key={sub.id}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-800/40"
-                                  >
-                                    <td className="px-4 py-2 font-medium flex items-center gap-2">
-                                      <span
-                                        className="w-2 h-2 rounded-full"
-                                        style={{
-                                          backgroundColor:
-                                            sub.primaryColor || "#6366f1",
-                                        }}
-                                      />
-                                      {sub.shortName}
-                                    </td>
-                                    <td className="px-4 py-2 text-right font-mono tabular-nums">
-                                      {certCount.toLocaleString()}
-                                    </td>
-                                    <td className="px-4 py-2 text-right font-mono">
-                                      {programCount}
-                                    </td>
-                                    <td className="px-4 py-2 text-right font-mono">
-                                      {testimonialCount}
-                                    </td>
-                                    <td className="px-4 py-2 text-right font-mono text-gray-500">
-                                      {pct}%
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
                   {/* Helper */}
                   <div className="mt-6 text-[11px] text-gray-500 dark:text-gray-400">
@@ -1407,6 +1264,9 @@ AdminDashboardProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Template Manager - unified admin manages templates across subsidiaries */}
+              <CertificateTemplateManager subsidiaries={subsidiaries} />
 
               {/* Change Password Modal/Form */}
               {showChangePassword && (
@@ -1585,7 +1445,7 @@ AdminDashboardProps) {
           isOpen={showCertificateModal}
           onClose={() => setShowCertificateModal(false)}
           user={user}
-          currentSubsidiary={currentSubsidiary}
+          currentSubsidiary={null}
         />
 
         <NewProgramModal
@@ -1593,8 +1453,8 @@ AdminDashboardProps) {
           onClose={() => setShowNewProgramModal(false)}
           user={user}
           subsidiaries={subsidiaries}
-          currentSubsidiary={currentSubsidiary}
-          onAddProgram={onAddProgram}
+          currentSubsidiary={null}
+          onAddProgram={() => {}}
         />
       </div>
     </TooltipProvider>
