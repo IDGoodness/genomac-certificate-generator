@@ -13,7 +13,6 @@ import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 import {
   UserPlus,
-  Shield,
   Eye,
   EyeOff,
   AlertCircle,
@@ -107,7 +106,7 @@ export default function AdminRegister({ onBackToLogin }: AdminRegisterProps) {
       await authService.register(registerData);
 
       toast.success(
-        `Registration successful! Welcome ${formData.firstName}! You can now log in.`
+        `Registration successful! Welcome ${formData.firstName}! You can now log in.`,
       );
 
       // Clear the form after successful registration

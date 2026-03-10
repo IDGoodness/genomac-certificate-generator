@@ -1,18 +1,18 @@
-import CertificateTemplate1 from './templates/CertificateTemplate1';
-import CertificateTemplate2 from './templates/CertificateTemplate2';
-import CertificateTemplate3 from './templates/CertificateTemplate3';
-import CertificateTemplate4 from './templates/CertificateTemplate4';
-import CertificateTemplate5 from './templates/CertificateTemplate5';
-import CertificateTemplate6 from './templates/CertificateTemplate6';
-import CertificateTemplate7 from './templates/CertificateTemplate7';
-import CertificateTemplate8 from './templates/CertificateTemplate8';
-import CertificateTemplate9 from './templates/CertificateTemplate9';
-import CertificateTemplate10 from './templates/CertificateTemplate10';
-import InstituteMentorshipTemplate from './templates/InstituteMentorshipTemplate';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Check } from 'lucide-react';
-import type { UserProfile, Subsidiary } from '../App';
+import CertificateTemplate1 from "./templates/CertificateTemplate1";
+import CertificateTemplate2 from "./templates/CertificateTemplate2";
+import CertificateTemplate3 from "./templates/CertificateTemplate3";
+import CertificateTemplate4 from "./templates/CertificateTemplate4";
+import CertificateTemplate5 from "./templates/CertificateTemplate5";
+import CertificateTemplate6 from "./templates/CertificateTemplate6";
+import CertificateTemplate7 from "./templates/CertificateTemplate7";
+import CertificateTemplate8 from "./templates/CertificateTemplate8";
+import CertificateTemplate9 from "./templates/CertificateTemplate9";
+import CertificateTemplate10 from "./templates/CertificateTemplate10";
+import InstituteMentorshipTemplate from "./templates/InstituteMentorshipTemplate";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Check } from "lucide-react";
+import type { UserProfile, Subsidiary } from "../App";
 
 interface TemplateComponentProps {
   header: string;
@@ -122,35 +122,55 @@ const allTemplates: TemplateOption[] = [
 ];
 
 // Access control function to filter templates based on user permissions
-const getAccessibleTemplates = (user: UserProfile, currentSubsidiary: Subsidiary | null): TemplateOption[] => {
+const getAccessibleTemplates = (
+  user: UserProfile,
+  currentSubsidiary: Subsidiary | null,
+): TemplateOption[] => {
   // Holdings admin can see all templates
-  if (user.role === 'holdings_admin') {
+  if (user.role === "holdings_admin" || user.role === "admin") {
     return allTemplates;
   }
-  
+
   // Get the subsidiary ID from currentSubsidiary or user.subsidiary
-  const subsidiaryId = currentSubsidiary?.id || user.subsidiary?.id;
-  
+  const subsidiaryId =
+    currentSubsidiary?.id ||
+    (user.subsidiary
+      ? typeof user.subsidiary === "object"
+        ? user.subsidiary.id
+        : user.subsidiary
+      : undefined);
+
   // Filter templates based on subsidiary access
   switch (subsidiaryId) {
-    case 'genomac_institute':
+    case "genomac_institute":
       // Institute gets templates 1 and 2 (Institute-specific)
-      return allTemplates.filter(template => template.id === '1' || template.id === '2' || template.id === '11');
-    case 'genomac_innovation_hub':
+      return allTemplates.filter(
+        (template) =>
+          template.id === "1" || template.id === "2" || template.id === "11",
+      );
+    case "genomac_innovation_hub":
       // G-iHub gets templates 3 and 4 (G-iHub-specific)
-      return allTemplates.filter(template => template.id === '3' || template.id === '4');
-    case 'genomac_services_and_consult':
+      return allTemplates.filter(
+        (template) => template.id === "3" || template.id === "4",
+      );
+    case "genomac_services_and_consult":
       // GSC gets templates 5 and 6 (GSC-specific)
-      return allTemplates.filter(template => template.id === '5' || template.id === '6');
-    case 'g_natures':
+      return allTemplates.filter(
+        (template) => template.id === "5" || template.id === "6",
+      );
+    case "g_natures":
       // GNATURES gets templates 7 and 8 (GNATURES-specific)
-      return allTemplates.filter(template => template.id === '7' || template.id === '8');
-    case 'genomac_labs':
+      return allTemplates.filter(
+        (template) => template.id === "7" || template.id === "8",
+      );
+    case "genomac_labs":
       // G-Labs gets templates 9 and 10 (G-Labs-specific)
-      return allTemplates.filter(template => template.id === '9' || template.id === '10');
+      return allTemplates.filter(
+        (template) => template.id === "9" || template.id === "10",
+      );
     default:
       // Default fallback for unknown subsidiaries - only generic template 1
-      return allTemplates.filter(template => template.id === '1');
+      return allTemplates.filter((template) => template.id === "1");
   }
 };
 
@@ -162,23 +182,23 @@ export default function TemplatePreviewSelector({
   currentSubsidiary,
 }: TemplatePreviewSelectorProps) {
   const templates = getAccessibleTemplates(user, currentSubsidiary);
-  
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Choose Certificate Template</h3>
-      
+
       <div className="space-y-6">
         {templates.map((template: TemplateOption) => {
           const TemplateComponent = template.component;
           const isSelected = selectedTemplateId === template.id;
-          
+
           return (
             <Card
               key={template.id}
               className={`cursor-pointer transition-all duration-200 w-[450px] hover:shadow-lg ${
-                isSelected 
-                  ? 'ring-2 ring-indigo-500 border-indigo-200 bg-indigo-50' 
-                  : 'border-gray-200 hover:border-gray-300'
+                isSelected
+                  ? "ring-2 ring-indigo-500 border-indigo-200 bg-indigo-50"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
               onClick={() => onSelectTemplate(template.id)}
             >
@@ -203,7 +223,7 @@ export default function TemplatePreviewSelector({
                           onSelectTemplate(template.id);
                         }}
                       >
-                        {isSelected ? 'Selected' : 'Select'}
+                        {isSelected ? "Selected" : "Select"}
                       </Button>
                     </div>
                   </div>
@@ -213,8 +233,13 @@ export default function TemplatePreviewSelector({
                       <TemplateComponent
                         header={formData.header || "Certificate of Completion"}
                         courseTitle={formData.courseTitle || "Sample Course"}
-                        description={formData.description || "Sample description"}
-                        date={formData.date || new Date().toISOString().split('T')[0]}
+                        description={
+                          formData.description || "Sample description"
+                        }
+                        date={
+                          formData.date ||
+                          new Date().toISOString().split("T")[0]
+                        }
                         recipientName="John Doe"
                         isPreview={true}
                       />
