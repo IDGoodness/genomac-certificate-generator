@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { authService, type LoginRequest, type UserProfileResponse } from '../services/auth.service';
 
 // Import the existing interfaces from App
-import type { UserProfile, Subsidiary } from '../App';
+import type { UserProfile } from '../App';
 
 // Backend user profile interface (what we get from API)
 interface BackendUserProfile {

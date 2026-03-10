@@ -308,6 +308,34 @@ class AuthService {
     isAuthenticated(): boolean {
         return !!this.getToken();
     }
+
+    getUserInfo() {
+        const token = this.getToken();
+        if (!token) {
+            return {
+                role: 'none',
+                subsidiary: null,
+                isHoldingsAdmin: false,
+            };
+        }
+
+        try {
+            const decoded = jwtDecode<JWTPayload>(token);
+            const isHoldingsAdmin = !decoded.subsidiary || decoded.subsidiary === '';
+            return {
+                role: isHoldingsAdmin ? 'holdings_admin' : 'subsidiary_admin',
+                subsidiary: decoded.subsidiary || null,
+                isHoldingsAdmin,
+            };
+        } catch (error) {
+            console.error('❌ Failed to decode token:', error);
+            return {
+                role: 'none',
+                subsidiary: null,
+                isHoldingsAdmin: false,
+            };
+        }
+    }
 }
 
 export const authService = new AuthService();

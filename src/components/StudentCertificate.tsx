@@ -42,9 +42,7 @@ import {
 } from "../utils/encryption";
 import type { Subsidiary, Program } from "../App";
 
-interface StudentCertificateProps {
-  subsidiaries: Subsidiary[];
-}
+interface StudentCertificateProps {}
 
 interface CertificateData {
   id: string;
@@ -64,9 +62,7 @@ interface CertificateData {
   header?: string;
 }
 
-const StudentCertificate: React.FC<StudentCertificateProps> = ({
-  subsidiaries,
-}) => {
+const StudentCertificate: React.FC<StudentCertificateProps> = () => {
   // URL params (encrypted or legacy)
   type EncryptedRoute = { encryptedData?: string };
   type LegacyRoute = {
@@ -241,7 +237,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
   const formatTimeRemaining = (milliseconds: number): string => {
     const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
     const hours = Math.floor(
-      (milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      (milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
     );
     const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
 
@@ -279,88 +275,52 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
         // fetching certificate
 
         const certificate_data = await certificateService.getCertificateById(
-          certificateId!
+          certificateId!,
         );
         // certificate data received
 
         if (certificate_data) {
-          // Find subsidiary and program data
-          const subsidiary = subsidiaries.find((s) => s.id === subsidiaryId);
-          const program = subsidiary?.programs.find((p) => p.id === programId);
+          // Create fallback subsidiary and program objects
+          const fallbackSubsidiary: Subsidiary = {
+            id: subsidiaryId!,
+            name: "Certificate Organization",
+            shortName: "CO",
+            logo: "/genomac.png",
+            primaryColor: "#6366f1",
+            programs: [],
+          };
 
-          if (subsidiary && program) {
-            const certificateObject = {
-              id: certificate_data._id || certificateId!,
-              studentName: studentName || "", // Use current student name from state (already initialized from sessionStorage)
-              subsidiary,
-              program,
-              templateType:
-                String(certificate_data.templateType) ||
-                program.template ||
-                "1", // Prioritize backend certificate data over program template
-              courseTitle: certificate_data.courseTitle || program.name,
-              description: certificate_data.description || program.description,
-              header: certificate_data.header || "Certificate", // Add header from backend data
-              completionDate: certificate_data.date || new Date().toISOString(),
-              issuedDate:
-                certificate_data.createdAt || new Date().toISOString(),
-              status: "valid" as const,
-              downloadCount: 0,
-              lastAccessed: new Date().toISOString(),
-            };
-            setCertificate(certificateObject);
-            setLoading(false);
-          } else {
-            if (!subsidiary) {
-              // creating fallback subsidiary
-            }
-            if (!program) {
-              // creating fallback program
-            }
+          const fallbackProgram: Program = {
+            id: programId!,
+            name: certificate_data.courseTitle || "Certificate Program",
+            description:
+              certificate_data.description ||
+              "Professional Certificate Program",
+            template: "1" as const,
+            certificates: 0,
+            testimonials: 0,
+          };
 
-            // For demo purposes, create a fallback certificate
-            const fallbackSubsidiary = subsidiary || {
-              id: subsidiaryId!,
-              name: "Certificate Organization",
-              shortName: "CO",
-              logo: "/genomac.png",
-              primaryColor: "#6366f1",
-              programs: [],
-            };
-
-            const fallbackProgram = program || {
-              id: programId!,
-              name: certificate_data.courseTitle || "Certificate Program",
-              description:
-                certificate_data.description ||
-                "Professional Certificate Program",
-              template: "1" as const,
-              certificates: 0,
-              testimonials: 0,
-            };
-
-            setCertificate({
-              id: certificate_data._id || certificateId!,
-              studentName: studentName || "", // Use current student name (from state or sessionStorage)
-              subsidiary: fallbackSubsidiary,
-              program: fallbackProgram,
-              templateType:
-                String(certificate_data.templateType) ||
-                fallbackProgram.template ||
-                "1", // Prioritize backend certificate data
-              courseTitle: certificate_data.courseTitle || fallbackProgram.name,
-              description:
-                certificate_data.description || fallbackProgram.description,
-              header: certificate_data.header || "Certificate", // Add header from backend data
-              completionDate: certificate_data.date || new Date().toISOString(),
-              issuedDate:
-                certificate_data.createdAt || new Date().toISOString(),
-              status: "valid" as const,
-              downloadCount: 0,
-              lastAccessed: new Date().toISOString(),
-            });
-            setLoading(false);
-          }
+          setCertificate({
+            id: certificate_data._id || certificateId!,
+            studentName: studentName || "", // Use current student name (from state or sessionStorage)
+            subsidiary: fallbackSubsidiary,
+            program: fallbackProgram,
+            templateType:
+              String(certificate_data.templateType) ||
+              fallbackProgram.template ||
+              "1", // Prioritize backend certificate data
+            courseTitle: certificate_data.courseTitle || fallbackProgram.name,
+            description:
+              certificate_data.description || fallbackProgram.description,
+            header: certificate_data.header || "Certificate", // Add header from backend data
+            completionDate: certificate_data.date || new Date().toISOString(),
+            issuedDate: certificate_data.createdAt || new Date().toISOString(),
+            status: "valid" as const,
+            downloadCount: 0,
+            lastAccessed: new Date().toISOString(),
+          });
+          setLoading(false);
         } else {
           // no certificate data received
           toast.error("Certificate not found. Please check the link.");
@@ -369,7 +329,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
       } catch {
         // error fetching certificate
         toast.error(
-          "Failed to load certificate. Please check the link and try again."
+          "Failed to load certificate. Please check the link and try again.",
         );
         setLoading(false);
       }
@@ -390,20 +350,13 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
       setTimeout(() => {
         if (!(certificateId && subsidiaryId && programId)) {
           toast.error(
-            "Certificate link is invalid or incomplete. Please check the URL."
+            "Certificate link is invalid or incomplete. Please check the URL.",
           );
           setLoading(false);
         }
       }, 2000);
     }
-  }, [
-    subsidiaryId,
-    programId,
-    certificateId,
-    subsidiaries,
-    studentName,
-    isNameInitialized,
-  ]);
+  }, [subsidiaryId, programId, certificateId, studentName, isNameInitialized]);
 
   // Prepare an offscreen, fixed-size render to avoid mobile viewport scaling issues
   const waitForImages = async (container: HTMLElement) => {
@@ -418,15 +371,15 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
               () => resolve(),
               {
                 once: true,
-              }
+              },
             );
             (img as HTMLImageElement).addEventListener(
               "error",
               () => resolve(),
-              { once: true }
+              { once: true },
             );
-          })
-      )
+          }),
+      ),
     );
   };
 
@@ -484,7 +437,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
               isPreview={false}
               mode="student"
             />
-          </div>
+          </div>,
         );
 
         // Let React paint
@@ -504,7 +457,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
         }
         const target =
           (container.querySelector(
-            '#export-root [class*="w-[1000px]"][class*="h-[600px]"]'
+            '#export-root [class*="w-[1000px]"][class*="h-[600px]"]',
           ) as HTMLElement) ||
           (container.querySelector("#export-root") as HTMLElement) ||
           container;
@@ -541,7 +494,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
       // Try to locate the inner 1000x600 canvas inside templates
       const target =
         (root.querySelector(
-          '[class*="w-[1000px]"][class*="h-[600px]"]'
+          '[class*="w-[1000px]"][class*="h-[600px]"]',
         ) as HTMLElement) || root;
 
       // Save previous inline styles to restore later
@@ -635,7 +588,7 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
       })
       .catch(() => {
         alert(
-          "An error occurred while generating your certificate. Please try again."
+          "An error occurred while generating your certificate. Please try again.",
         );
       })
       .finally(() => {
@@ -673,27 +626,27 @@ const StudentCertificate: React.FC<StudentCertificateProps> = ({
     switch (platform) {
       case "facebook":
         url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          shareUrl
+          shareUrl,
         )}&quote=${encodeURIComponent(text)}`;
         break;
       case "twitter":
         url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          shareUrl
+          shareUrl,
         )}&text=${encodeURIComponent(text)}`;
         break;
       case "linkedin":
         url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          shareUrl
+          shareUrl,
         )}`;
         break;
       case "whatsapp":
         url = `https://wa.me/?text=${encodeURIComponent(
-          text + " " + shareUrl
+          text + " " + shareUrl,
         )}`;
         break;
       case "email":
         url = `mailto:?subject=${encodeURIComponent(
-          "Check out my certificate!"
+          "Check out my certificate!",
         )}&body=${encodeURIComponent(text + "\\n\\n" + shareUrl)}`;
         break;
     }

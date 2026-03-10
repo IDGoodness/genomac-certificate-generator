@@ -55,9 +55,11 @@ interface UserProfile {
   id: string;
   username: string;
   firstName: string;
-  role: "admin";
+  role: "admin" | "holdings_admin" | "subsidiary_admin";
   company: string;
   permissions: string[];
+  subsidiary?: Subsidiary | null;
+  canSwitchSubsidiaries?: boolean;
 }
 
 export default function App() {
